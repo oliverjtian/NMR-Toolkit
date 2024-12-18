@@ -1,0 +1,54 @@
+header
+	include "header_solid";
+end header;
+
+instrument
+	include "instrument_solid";
+end instrument;
+
+acquisition
+	x_domain		=>	"Proton";
+	x_offset		=>	5[ppm];
+	x_sweep			=>	100[kHz];
+	x_points		=>	1024;
+	scans			=>	3;
+	x_prescans		=>	0;
+	mod_return		=>	1;
+	include "acquisition_solid";
+end acquisition;
+
+pulse
+	collect COMPLEX,OBS;
+	include "pulse_solid";
+	initial_wait		=	10.0[ms];
+	irr_domain		=>	"Nitrogen14";
+	irr_offset		=>	0[ppm];
+	irr_width_pulse		=>	0[us];
+	irr_amp_pulse		=>	100[%];
+	obs_width_90		=>	x90;
+	obs_width_180		=>	x90*2;
+	obs_amp_pulse		=>	100[%];
+	tau_e			=>	3[ms];
+	de			=>	2[ms];
+	relaxation_delay	=>	5.0[s];
+	obs_atn			=>	xatn;
+	irr_atn			=>	irratn;
+	obs_phs_prep		=	{0,120,240};
+	irr_phs_pulse		=	{0};
+	obs_phs_echo		=	{3(0),3(120),3(240)};
+	obs_phs_acq		=	{0,240,120,240,120,0,120,0,240};
+	module_config		=	"solid_sample";
+begin
+	initial_wait;
+	relaxation_delay;
+	obs_width_90, (obs.gate, obs.phs.obs_phs_prep, obs.amp.obs_amp_pulse, obs.atn.obs_atn);
+parallel
+justify leading
+	tau_e;
+justify leading
+	irr_width_pulse, (irr.gate, irr.phs.irr_phs_pulse, irr.amp.irr_amp_pulse, irr.atn.irr_atn);
+end parallel;
+	obs_width_180, (obs.gate, obs.phs.obs_phs_echo, obs.amp.obs_amp_pulse, obs.atn.obs_atn);
+	de;
+	acq(dead_time, delay, obs_phs_acq);
+end pulse;
